@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "lint": "eslint"
   },
   "keywords": [],
@@ -13,10 +13,16 @@
   "description": "Order Service for RankMyApp Application",
   "devDependencies": {
     "@eslint/js": "9.39.1",
+    "@swc/cli": "0.7.9",
+    "@swc/core": "1.15.3",
+    "@swc/jest": "0.2.39",
+    "@types/jest": "30.0.0",
     "@types/node": "24.10.1",
     "eslint": "9.39.1",
     "globals": "16.5.0",
+    "jest": "30.2.0",
     "jiti": "2.6.1",
+    "ts-node": "10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.48.0"
   },
