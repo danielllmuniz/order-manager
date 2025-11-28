@@ -1,12 +1,14 @@
-import { CreateOrderUseCase } from './create-order.use-case';
-import { IOrderRepository } from '../repositories/order-repository.interface';
-import { IEventPublisher } from '../services/event-publisher.interface';
 import { Order } from '../../domain/entities/order';
+import { IEventPublisher } from '../services/event-publisher.interface';
+import { ILogger } from '../services/logger.interface';
+import { IOrderRepository } from '../services/order-repository.interface';
+import { CreateOrderUseCase } from './create-order.use-case';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
   let mockRepository: jest.Mocked<IOrderRepository>;
   let mockEventPublisher: jest.Mocked<IEventPublisher>;
+  let mockLogger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
     mockRepository = {
@@ -19,7 +21,14 @@ describe('CreateOrderUseCase', () => {
       publish: jest.fn(),
     };
 
-    useCase = new CreateOrderUseCase(mockRepository, mockEventPublisher);
+    mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+
+    useCase = new CreateOrderUseCase(mockRepository, mockEventPublisher, mockLogger);
   });
 
   describe('execute', () => {
@@ -117,6 +126,79 @@ describe('CreateOrderUseCase', () => {
 
       await expect(useCase.execute({ id: 'order-123' })).rejects.toThrow(
         'RabbitMQ error',
+      );
+    });
+  });
+
+  describe('logging', () => {
+    it('should log info when use case starts', async () => {
+      await useCase.execute({ id: 'order-123' });
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'CreateOrderUseCase started',
+        { orderId: 'order-123' },
+      );
+    });
+
+    it('should log info when use case completes successfully', async () => {
+      await useCase.execute({ id: 'order-456' });
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'CreateOrderUseCase completed successfully',
+        { orderId: 'order-456' },
+      );
+    });
+
+    it('should log debug for each step', async () => {
+      await useCase.execute({ id: 'order-789' });
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Creating order from factory',
+        { orderId: 'order-789' },
+      );
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Saving order to repository',
+        { orderId: 'order-789' },
+      );
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Publishing OrderCreatedEvent',
+        { orderId: 'order-789' },
+      );
+    });
+
+    it('should log error when use case fails', async () => {
+      mockRepository.save.mockRejectedValueOnce(new Error('DB error'));
+
+      try {
+        await useCase.execute({ id: 'order-error' });
+      } catch {
+        // Expected
+      }
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'CreateOrderUseCase failed',
+        expect.any(Error),
+        { orderId: 'order-error' },
+      );
+    });
+
+    it('should log successful save to repository', async () => {
+      await useCase.execute({ id: 'order-123' });
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Order saved successfully',
+        { orderId: 'order-123' },
+      );
+    });
+
+    it('should log successful event publication', async () => {
+      await useCase.execute({ id: 'order-123' });
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Event published successfully',
+        { orderId: 'order-123' },
       );
     });
   });

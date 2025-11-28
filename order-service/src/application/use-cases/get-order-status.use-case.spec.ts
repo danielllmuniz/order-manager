@@ -1,10 +1,12 @@
 import { OrderFactory } from '../../domain/factories/order-factory';
-import { IOrderRepository } from '../repositories/order-repository.interface';
+import { ILogger } from '../services/logger.interface';
+import { IOrderRepository } from '../services/order-repository.interface';
 import { GetOrderStatusUseCase, OrderNotFoundError } from './get-order-status.use-case';
 
 describe('GetOrderStatusUseCase', () => {
   let useCase: GetOrderStatusUseCase;
   let mockRepository: jest.Mocked<IOrderRepository>;
+  let mockLogger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
     mockRepository = {
@@ -13,7 +15,14 @@ describe('GetOrderStatusUseCase', () => {
       update: jest.fn(),
     };
 
-    useCase = new GetOrderStatusUseCase(mockRepository);
+    mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+
+    useCase = new GetOrderStatusUseCase(mockRepository, mockLogger);
   });
 
   describe('execute', () => {
