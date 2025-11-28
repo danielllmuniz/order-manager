@@ -12,6 +12,18 @@ export default defineConfig([
     plugins: { js },
     extends: ["js/recommended"],
     languageOptions: { globals: globals.node },
+    rules: {
+      // Indentação automática (2 espaços)
+      "indent": ["error", 2, { "SwitchCase": 1 }],
+      // Linha no final do arquivo
+      "eol-last": ["error", "always"],
+      // Outras regras de formatação úteis
+      "semi": ["error", "always"],
+      "quotes": ["error", "single", { "avoidEscape": true }],
+      "comma-dangle": ["error", "always-multiline"],
+      "no-trailing-spaces": "error",
+      "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 0 }],
+    },
   },
   tseslint.configs.recommended,
 ]);
