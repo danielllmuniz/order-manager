@@ -209,6 +209,8 @@ const config: Config = {
     '**/src/**/*.spec.ts',
     '**/src/**/*.test.ts',
   ],
+  // Force Jest to exit after all tests complete (helps with MongoDB connections not closing)
+  // forceExit: true,
 };
 
 export default config;
