@@ -200,6 +200,15 @@ const config: Config = {
 
   // Whether to use watchman for file crawling
   // watchman: true,
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',  // Ignora a pasta dist
+  ],
+  // ou se preferir ser mais específico:
+  testMatch: [
+    '**/src/**/*.spec.ts',
+    '**/src/**/*.test.ts',
+  ],
 };
 
 export default config;
