@@ -1,10 +1,10 @@
 import { OrderId } from '../value-objects/order-id';
 import { OrderStatus, OrderStatusEnum } from '../value-objects/order-status';
 
-export class InvalidOrderStatusTransitionError extends Error {
-  constructor(currentStatus: OrderStatusEnum, newStatus: OrderStatusEnum) {
-    super(`Cannot transition from ${currentStatus} to ${newStatus}`);
-    this.name = 'InvalidOrderStatusTransitionError';
+export class CannotAdvanceOrderStatusError extends Error {
+  constructor(currentStatus: OrderStatusEnum) {
+    super(`Cannot advance from ${currentStatus}. Order is already ${currentStatus}`);
+    this.name = 'CannotAdvanceOrderStatusError';
   }
 }
 
@@ -14,11 +14,11 @@ export class Order {
   private status: OrderStatus;
   private updatedAt: Date;
 
-  private static readonly VALID_TRANSITIONS: Record<OrderStatusEnum, OrderStatusEnum[]> = {
-    [OrderStatusEnum.CREATED]: [OrderStatusEnum.PROCESSING],
-    [OrderStatusEnum.PROCESSING]: [OrderStatusEnum.SHIPPED],
-    [OrderStatusEnum.SHIPPED]: [OrderStatusEnum.DELIVERED],
-    [OrderStatusEnum.DELIVERED]: [],
+  private static readonly NEXT_STATUS: Record<OrderStatusEnum, OrderStatusEnum | null> = {
+    [OrderStatusEnum.CREATED]: OrderStatusEnum.PROCESSING,
+    [OrderStatusEnum.PROCESSING]: OrderStatusEnum.SHIPPED,
+    [OrderStatusEnum.SHIPPED]: OrderStatusEnum.DELIVERED,
+    [OrderStatusEnum.DELIVERED]: null,
   };
 
   constructor(
@@ -48,18 +48,29 @@ export class Order {
     return this.updatedAt;
   }
 
-  updateStatus(newStatus: OrderStatus): void {
-    if (this.status.equals(newStatus)) return;
-
+  private getNextStatus(): OrderStatusEnum {
     const currentStatusValue = this.status.getValue();
-    const newStatusValue = newStatus.getValue();
-    const validTransitions = Order.VALID_TRANSITIONS[currentStatusValue];
+    const nextStatusValue = Order.NEXT_STATUS[currentStatusValue];
 
-    if (!validTransitions.includes(newStatusValue)) {
-      throw new InvalidOrderStatusTransitionError(currentStatusValue, newStatusValue);
+    if (nextStatusValue === null) {
+      throw new CannotAdvanceOrderStatusError(currentStatusValue);
     }
 
-    this.status = newStatus;
+    return nextStatusValue;
+  }
+
+  advance(): void {
+    const nextStatusValue = this.getNextStatus();
+    this.status = OrderStatus.create(nextStatusValue);
     this.updatedAt = new Date();
+  }
+
+  canAdvance(): boolean {
+    try {
+      this.getNextStatus();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

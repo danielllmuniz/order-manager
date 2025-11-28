@@ -1,10 +1,10 @@
-import { Order, InvalidOrderStatusTransitionError } from './order';
+import { Order, CannotAdvanceOrderStatusError } from './order';
 import { OrderId } from '../value-objects/order-id';
 import { OrderStatus } from '../value-objects/order-status';
 
 describe('Order', () => {
   describe('constructor', () => {
-    it('should create an order with default values', () => {
+    it('should create an order with CREATED status by default', () => {
       const id = OrderId.create('order-123');
       const order = new Order(id);
 
@@ -49,96 +49,124 @@ describe('Order', () => {
     });
   });
 
-  describe('updateStatus', () => {
-    it('should update status and updatedAt when status changes to valid transition', () => {
+  describe('advance', () => {
+    it('should advance from CREATED to PROCESSING', () => {
       const id = OrderId.create('order-123');
-      const order = new Order(id, OrderStatus.created());
-      const initialUpdatedAt = order.getUpdatedAt();
+      const order = new Order(id);
 
-      jest.useFakeTimers();
-      jest.advanceTimersByTime(1000);
-
-      order.updateStatus(OrderStatus.processing());
+      order.advance();
 
       expect(order.getStatus().equals(OrderStatus.processing())).toBe(true);
-      expect(order.getUpdatedAt()).not.toEqual(initialUpdatedAt);
-
-      jest.useRealTimers();
     });
 
-    it('should not update updatedAt when status is the same', () => {
+    it('should advance from PROCESSING to SHIPPED', () => {
       const id = OrderId.create('order-123');
-      const order = new Order(id, OrderStatus.created());
-      const initialUpdatedAt = order.getUpdatedAt();
+      const order = new Order(id, OrderStatus.processing());
 
-      order.updateStatus(OrderStatus.created());
+      order.advance();
 
-      expect(order.getStatus().equals(OrderStatus.created())).toBe(true);
-      expect(order.getUpdatedAt()).toEqual(initialUpdatedAt);
+      expect(order.getStatus().equals(OrderStatus.shipped())).toBe(true);
     });
 
-    it('should handle valid status transitions through all states', () => {
+    it('should advance from SHIPPED to DELIVERED', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id, OrderStatus.shipped());
+
+      order.advance();
+
+      expect(order.getStatus().equals(OrderStatus.delivered())).toBe(true);
+    });
+
+    it('should advance through all states automatically', () => {
       const id = OrderId.create('order-123');
       const order = new Order(id);
 
       expect(order.getStatus().equals(OrderStatus.created())).toBe(true);
 
-      order.updateStatus(OrderStatus.processing());
+      order.advance();
       expect(order.getStatus().equals(OrderStatus.processing())).toBe(true);
 
-      order.updateStatus(OrderStatus.shipped());
+      order.advance();
       expect(order.getStatus().equals(OrderStatus.shipped())).toBe(true);
 
-      order.updateStatus(OrderStatus.delivered());
+      order.advance();
       expect(order.getStatus().equals(OrderStatus.delivered())).toBe(true);
     });
 
-    it('should throw error when attempting invalid status transition', () => {
+    it('should update updatedAt when advancing', () => {
       const id = OrderId.create('order-123');
-      const order = new Order(id, OrderStatus.created());
+      const order = new Order(id);
+      const initialUpdatedAt = order.getUpdatedAt();
 
-      expect(() => {
-        order.updateStatus(OrderStatus.shipped());
-      }).toThrow(InvalidOrderStatusTransitionError);
+      jest.useFakeTimers();
+      jest.advanceTimersByTime(1000);
 
-      expect(() => {
-        order.updateStatus(OrderStatus.delivered());
-      }).toThrow(InvalidOrderStatusTransitionError);
+      order.advance();
+
+      expect(order.getUpdatedAt()).not.toEqual(initialUpdatedAt);
+
+      jest.useRealTimers();
     });
 
-    it('should throw error when attempting to transition from PROCESSING to CREATED', () => {
-      const id = OrderId.create('order-123');
-      const order = new Order(id, OrderStatus.processing());
-
-      expect(() => {
-        order.updateStatus(OrderStatus.created());
-      }).toThrow(InvalidOrderStatusTransitionError);
-    });
-
-    it('should throw error when attempting to transition from DELIVERED', () => {
+    it('should throw error when trying to advance from DELIVERED', () => {
       const id = OrderId.create('order-123');
       const order = new Order(id, OrderStatus.delivered());
 
       expect(() => {
-        order.updateStatus(OrderStatus.shipped());
-      }).toThrow(InvalidOrderStatusTransitionError);
-
-      expect(() => {
-        order.updateStatus(OrderStatus.processing());
-      }).toThrow(InvalidOrderStatusTransitionError);
+        order.advance();
+      }).toThrow(CannotAdvanceOrderStatusError);
     });
 
-    it('should not update status when invalid transition is attempted', () => {
+    it('should not advance status if error is thrown', () => {
       const id = OrderId.create('order-123');
-      const order = new Order(id, OrderStatus.created());
+      const order = new Order(id, OrderStatus.delivered());
 
       try {
-        order.updateStatus(OrderStatus.delivered());
+        order.advance();
       } catch {
         // Expected error
       }
 
-      expect(order.getStatus().equals(OrderStatus.created())).toBe(true);
+      expect(order.getStatus().equals(OrderStatus.delivered())).toBe(true);
+    });
+  });
+
+  describe('canAdvance', () => {
+    it('should return true when CREATED', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id);
+
+      expect(order.canAdvance()).toBe(true);
+    });
+
+    it('should return true when PROCESSING', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id, OrderStatus.processing());
+
+      expect(order.canAdvance()).toBe(true);
+    });
+
+    it('should return true when SHIPPED', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id, OrderStatus.shipped());
+
+      expect(order.canAdvance()).toBe(true);
+    });
+
+    it('should return false when DELIVERED', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id, OrderStatus.delivered());
+
+      expect(order.canAdvance()).toBe(false);
+    });
+
+    it('should not throw when checking canAdvance on DELIVERED', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id, OrderStatus.delivered());
+
+      expect(() => {
+        order.canAdvance();
+      }).not.toThrow();
     });
   });
 
@@ -172,6 +200,45 @@ describe('Order', () => {
       const updatedAt = order.getUpdatedAt();
 
       expect(updatedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('Status progression', () => {
+    it('should enforce linear status progression', () => {
+      const id = OrderId.create('order-123');
+      const order = new Order(id);
+
+      // Status sequence: CREATED → PROCESSING → SHIPPED → DELIVERED
+      const statuses = [
+        OrderStatus.created(),
+        OrderStatus.processing(),
+        OrderStatus.shipped(),
+        OrderStatus.delivered(),
+      ];
+
+      statuses.forEach((_, index) => {
+        if (index < statuses.length - 1) {
+          expect(order.canAdvance()).toBe(true);
+          order.advance();
+        }
+      });
+
+      expect(order.getStatus().equals(OrderStatus.delivered())).toBe(true);
+      expect(order.canAdvance()).toBe(false);
+    });
+
+    it('should maintain immutability of createdAt', () => {
+      const id = OrderId.create('order-123');
+      const createdDate = new Date('2024-01-01');
+      const order = new Order(id, OrderStatus.created(), createdDate);
+
+      const originalCreatedAt = order.getCreatedAt();
+
+      order.advance();
+      order.advance();
+      order.advance();
+
+      expect(order.getCreatedAt()).toEqual(originalCreatedAt);
     });
   });
 });
