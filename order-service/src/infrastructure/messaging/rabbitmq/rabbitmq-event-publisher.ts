@@ -2,9 +2,13 @@ import { IEventPublisher } from '../../../application/services/event-publisher.i
 import { ILogger } from '../../../application/services/logger.interface';
 import { DomainEvent } from '../../../domain/events/domain-event';
 
+interface IMessageBroker {
+  publish(eventType: string, message: Record<string, unknown>): Promise<void>;
+}
+
 export class RabbitmqEventPublisher implements IEventPublisher {
   constructor(
-    private readonly messageBroker: IEventPublisher,
+    private readonly messageBroker: IMessageBroker,
     private readonly logger: ILogger,
   ) {}
 
