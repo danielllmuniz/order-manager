@@ -5,11 +5,25 @@ export enum OrderStatus {
   DELIVERED = 'delivered'
 }
 
+export class InvalidOrderStatusTransitionError extends Error {
+  constructor(currentStatus: OrderStatus, newStatus: OrderStatus) {
+    super(`Cannot transition from ${currentStatus} to ${newStatus}`);
+    this.name = 'InvalidOrderStatusTransitionError';
+  }
+}
+
 export class Order {
-  public readonly id: string;
-  public readonly createdAt: Date;
-  public status: OrderStatus;
-  public updatedAt: Date;
+  private readonly id: string;
+  private readonly createdAt: Date;
+  private status: OrderStatus;
+  private updatedAt: Date;
+
+  private static readonly VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+    [OrderStatus.CREATED]: [OrderStatus.PROCESSING],
+    [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],
+    [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+    [OrderStatus.DELIVERED]: [],
+  };
 
   constructor(
     id: string,
@@ -22,8 +36,31 @@ export class Order {
     this.updatedAt = new Date();
   }
 
-  updateStatus(newStatus: OrderStatus) {
+  getId(): string {
+    return this.id;
+  }
+
+  getStatus(): OrderStatus {
+    return this.status;
+  }
+
+  getCreatedAt(): Date {
+    return this.createdAt;
+  }
+
+  getUpdatedAt(): Date {
+    return this.updatedAt;
+  }
+
+  updateStatus(newStatus: OrderStatus): void {
     if (this.status === newStatus) return;
+
+    const validTransitions = Order.VALID_TRANSITIONS[this.status];
+
+    if (!validTransitions.includes(newStatus)) {
+      throw new InvalidOrderStatusTransitionError(this.status, newStatus);
+    }
+
     this.status = newStatus;
     this.updatedAt = new Date();
   }
