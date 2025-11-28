@@ -1,5 +1,5 @@
-import { OrderStatusChangedEvent } from './order-status-changed-event';
 import { OrderStatusEnum } from '../value-objects/order-status';
+import { OrderStatusChangedEvent } from './order-status-changed-event';
 
 describe('OrderStatusChangedEvent', () => {
   describe('constructor', () => {
@@ -108,7 +108,7 @@ describe('OrderStatusChangedEvent', () => {
     });
 
     it('should handle all possible status transitions', () => {
-      const transitions = [
+      const transitions: Array<[OrderStatusEnum, OrderStatusEnum]> = [
         [OrderStatusEnum.CREATED, OrderStatusEnum.PROCESSING],
         [OrderStatusEnum.PROCESSING, OrderStatusEnum.SHIPPED],
         [OrderStatusEnum.SHIPPED, OrderStatusEnum.DELIVERED],

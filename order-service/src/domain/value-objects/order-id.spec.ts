@@ -123,7 +123,7 @@ describe('OrderId', () => {
         OrderId.create('');
       } catch (error) {
         expect(error).toBeInstanceOf(InvalidOrderIdError);
-        expect(error.message).toContain('Invalid order id');
+        expect((error as Error).message).toContain('Invalid order id');
         expect((error as InvalidOrderIdError).name).toBe('InvalidOrderIdError');
       }
     });

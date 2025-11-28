@@ -116,7 +116,7 @@ describe('OrderStatus', () => {
     });
 
     it('should compare all status combinations', () => {
-      const statuses = [
+      const statuses: OrderStatus[] = [
         OrderStatus.created(),
         OrderStatus.processing(),
         OrderStatus.shipped(),
@@ -131,7 +131,7 @@ describe('OrderStatus', () => {
       // Different statuses should not be equal
       for (let i = 0; i < statuses.length; i++) {
         for (let j = i + 1; j < statuses.length; j++) {
-          expect(statuses[i].equals(statuses[j])).toBe(false);
+          expect(statuses[i]!.equals(statuses[j]!)).toBe(false);
         }
       }
     });
@@ -165,7 +165,7 @@ describe('OrderStatus', () => {
         OrderStatus.create('invalid');
       } catch (error) {
         expect(error).toBeInstanceOf(InvalidOrderStatusError);
-        expect(error.message).toContain('Invalid order status');
+        expect((error as Error).message).toContain('Invalid order status');
         expect((error as InvalidOrderStatusError).name).toBe('InvalidOrderStatusError');
       }
     });
