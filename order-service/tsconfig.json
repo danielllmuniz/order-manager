@@ -9,6 +9,7 @@
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
+    "moduleResolution": "bundler",
     "target": "esnext",
     "types": [ "node", "jest" ],
     // For nodejs:

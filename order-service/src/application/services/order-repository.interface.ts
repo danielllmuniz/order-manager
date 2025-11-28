@@ -1,1 +1,1 @@
-export type { IOrderRepository } from '../../domain/repositories/ order-repository';
+export type { IOrderRepository } from '../../domain/repositories/order-repository';
