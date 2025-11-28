@@ -1,42 +1,38 @@
-export enum OrderStatus {
-  CREATED = 'created',
-  PROCESSING = 'processing',
-  SHIPPED = 'shipped',
-  DELIVERED = 'delivered'
-}
+import { OrderId } from '../value-objects/order-id';
+import { OrderStatus, OrderStatusEnum } from '../value-objects/order-status';
 
 export class InvalidOrderStatusTransitionError extends Error {
-  constructor(currentStatus: OrderStatus, newStatus: OrderStatus) {
+  constructor(currentStatus: OrderStatusEnum, newStatus: OrderStatusEnum) {
     super(`Cannot transition from ${currentStatus} to ${newStatus}`);
     this.name = 'InvalidOrderStatusTransitionError';
   }
 }
 
 export class Order {
-  private readonly id: string;
+  private readonly id: OrderId;
   private readonly createdAt: Date;
   private status: OrderStatus;
   private updatedAt: Date;
 
-  private static readonly VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-    [OrderStatus.CREATED]: [OrderStatus.PROCESSING],
-    [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],
-    [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
-    [OrderStatus.DELIVERED]: [],
+  private static readonly VALID_TRANSITIONS: Record<OrderStatusEnum, OrderStatusEnum[]> = {
+    [OrderStatusEnum.CREATED]: [OrderStatusEnum.PROCESSING],
+    [OrderStatusEnum.PROCESSING]: [OrderStatusEnum.SHIPPED],
+    [OrderStatusEnum.SHIPPED]: [OrderStatusEnum.DELIVERED],
+    [OrderStatusEnum.DELIVERED]: [],
   };
 
   constructor(
-    id: string,
+    id: OrderId,
     status?: OrderStatus,
     createdAt?: Date,
   ) {
     this.id = id;
-    this.status = status ?? OrderStatus.CREATED;
+    this.status = status ?? OrderStatus.created();
     this.createdAt = createdAt ?? new Date();
     this.updatedAt = new Date();
   }
 
-  getId(): string {
+  getId(): OrderId {
     return this.id;
   }
 
@@ -53,12 +49,14 @@ export class Order {
   }
 
   updateStatus(newStatus: OrderStatus): void {
-    if (this.status === newStatus) return;
+    if (this.status.equals(newStatus)) return;
 
-    const validTransitions = Order.VALID_TRANSITIONS[this.status];
+    const currentStatusValue = this.status.getValue();
+    const newStatusValue = newStatus.getValue();
+    const validTransitions = Order.VALID_TRANSITIONS[currentStatusValue];
 
-    if (!validTransitions.includes(newStatus)) {
-      throw new InvalidOrderStatusTransitionError(this.status, newStatus);
+    if (!validTransitions.includes(newStatusValue)) {
+      throw new InvalidOrderStatusTransitionError(currentStatusValue, newStatusValue);
     }
 
     this.status = newStatus;
