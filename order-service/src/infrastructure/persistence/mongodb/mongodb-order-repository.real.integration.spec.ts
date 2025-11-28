@@ -1,17 +1,8 @@
-import { connect, Mongoose } from 'mongoose';
+import { connect, Model, Mongoose } from 'mongoose';
 import { OrderFactory } from '../../../domain/factories/order-factory';
 import { MongodbOrderRepository } from './mongodb-order-repository';
 import { OrderDocument, orderSchema } from './order.schema';
-import { Model } from 'mongoose';
 
-/**
- * Real MongoDB Integration Tests for OrderRepository
- *
- * These tests connect to a real MongoDB instance and test actual CRUD operations.
- * Requires: docker-compose up -d
- *
- * To run: npm test -- mongodb-order-repository.real.integration.spec.ts
- */
 describe('MongodbOrderRepository - Real Integration Tests', () => {
   let mongoConnection: Mongoose | null = null;
   let orderModel: Model<OrderDocument> | null = null;
@@ -39,7 +30,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
       repository = new MongodbOrderRepository(orderModel, mockLogger);
       isMongoAvailable = true;
     } catch {
-      console.log('⚠️  MongoDB not available - skipping integration tests');
+      console.log('MongoDB not available - skipping integration tests');
       console.log('Start MongoDB with: docker-compose up -d');
       isMongoAvailable = false;
     }
