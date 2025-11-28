@@ -18,7 +18,7 @@ export class OrderFactory {
     return new Order(orderId, orderStatus, createdAt);
   }
 
-  static createWithStatus(id: string, status: OrderStatusEnum): Order {
+  static createWithStatus(id: string, status: OrderStatusEnum | string): Order {
     const orderId = OrderId.create(id);
     const orderStatus = OrderStatus.create(status);
     return new Order(orderId, orderStatus);
