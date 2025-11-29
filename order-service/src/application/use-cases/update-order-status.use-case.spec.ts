@@ -62,7 +62,7 @@ describe('UpdateOrderStatusUseCase', () => {
       await useCase.execute({ id: orderId });
 
       expect(mockEventPublisher.publish).toHaveBeenCalledWith(
-        'order.status-changed',
+        'order.status.changed',
         expect.objectContaining({
           orderId: expect.any(String),
           previousStatus: 'created',

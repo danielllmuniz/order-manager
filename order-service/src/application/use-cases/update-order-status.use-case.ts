@@ -54,16 +54,17 @@ export class UpdateOrderStatusUseCase {
         orderId: request.id,
         previousStatus,
         newStatus,
+        eventName: 'order.status.changed',
       });
       const event = new OrderStatusChangedEvent(
         order.getId(),
         previousStatus,
         newStatus,
       );
-      await this.eventPublisher.publish('order.status-changed', event);
+      await this.eventPublisher.publish('order.status.changed', event);
       this.logger.info('Event published successfully', {
         orderId: request.id,
-        eventName: 'order.status-changed',
+        eventName: 'order.status.changed',
       });
 
       const response = {
