@@ -46,13 +46,15 @@ services:
     container_name: order-service
     restart: unless-stopped
     environment:
-      NODE_ENV: dev
+      NODE_ENV: development
       DATABASE_TYPE: mongodb
       MONGODB_URI: mongodb://mongodb:27017/order-service
-      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672
-      API_PORT: 3000
+      RABBITMQ_URI: amqp://admin:admin@rabbitmq:5672
+      PORT: 3000
     ports:
       - "3000:3000"
+    volumes:
+      - ./order-service/src:/app/src
     depends_on:
       mongodb:
         condition: service_healthy
