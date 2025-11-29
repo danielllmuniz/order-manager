@@ -1,0 +1,61 @@
+### Order Service API Tests
+### Base URL: http://localhost:3000
+
+@baseUrl = http://localhost:3000
+
+###
+### HEALTH CHECK
+### GET /health
+###
+GET {{baseUrl}}/health
+
+###
+### CREATE ORDER (ID gerado automaticamente com UUID)
+### POST /order
+###
+POST {{baseUrl}}/order
+Content-Type: application/json
+
+{}
+
+###
+### GET ORDER STATUS
+### GET /order/:id (use o ID retornado do POST anterior)
+###
+GET {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### UPDATE ORDER STATUS (CREATED → PROCESSING)
+### PATCH /order/:id/status
+###
+PATCH {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### UPDATE ORDER STATUS (PROCESSING → SHIPPED)
+### PATCH /order/:id/status
+###
+PATCH {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### UPDATE ORDER STATUS (SHIPPED → DELIVERED)
+### PATCH /order/:id/status
+###
+PATCH {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### UPDATE ORDER STATUS (DELIVERED - Should fail)
+### PATCH /order/:id/status
+###
+PATCH {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### GET FINAL ORDER STATUS
+### GET /order/:id
+###
+GET {{baseUrl}}/order/6f4c9e2a-1b3c-4d5e-8f7a-9c1d2e3f4a5b
+
+###
+### GET NON-EXISTENT ORDER
+### GET /order/:id
+###
+GET {{baseUrl}}/order/non-existent-order

@@ -1,9 +1,11 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Order } from '../entities/order';
 import { OrderId } from '../value-objects/order-id';
 import { OrderStatus, OrderStatusEnum } from '../value-objects/order-status';
 
 export class OrderFactory {
-  static create(id: string): Order {
+  static create(): Order {
+    const id = uuidv4();
     const orderId = OrderId.create(id);
     return new Order(orderId, OrderStatus.created());
   }
