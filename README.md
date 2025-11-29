@@ -86,9 +86,26 @@ PATCH /orders/:id/status
 Response: 200 OK
 ```
 
+## API Documentation (Swagger)
+
+Access the interactive API documentation at:
+
+```
+http://localhost:3000/api-docs
+```
+
+The Swagger UI provides:
+- Interactive API exploration
+- Request/response examples
+- Schema validation details
+- Try-it-out functionality for all endpoints
+
 ## Testing
 
 ```bash
+# Navigate to order-service
+cd order-service
+
 # Run tests
 npm test
 
