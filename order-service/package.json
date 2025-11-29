@@ -2,12 +2,11 @@
   "name": "order-service",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "jest --detectOpenHandles",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "dev": "node --watch src/infrastructure/api/server.ts"
+    "dev": "nodemon src/infrastructure/api/server.ts"
   },
   "keywords": [],
   "author": "Daniel Muniz",
@@ -30,10 +29,13 @@
     "typescript-eslint": "8.48.0"
   },
   "dependencies": {
+    "@types/express": "5.0.5",
     "@types/mongoose": "5.11.96",
     "amqplib": "0.10.9",
     "dotenv": "17.2.3",
+    "express": "5.1.0",
     "mongoose": "9.0.0",
+    "nodemon": "3.1.11",
     "zod": "4.1.13"
   }
 }

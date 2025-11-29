@@ -1,4 +1,5 @@
-import { env } from '../../config/env';
+
+import { env } from '../../env/index';
 import { app } from './express';
 
 const port: number = Number(env.PORT) || 3000;

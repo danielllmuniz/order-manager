@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   mongodb:
@@ -12,6 +12,8 @@ services:
       MONGO_INITDB_DATABASE: order-service
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - rma-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -29,14 +31,43 @@ services:
       RABBITMQ_DEFAULT_PASS: admin
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - rma-network
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 10s
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: dev
+      DATABASE_TYPE: mongodb
+      MONGODB_URI: mongodb://mongodb:27017/order-service
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672
+      API_PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rma-network
+    command: npm run dev
+
 volumes:
   mongodb_data:
     driver: local
   rabbitmq_data:
     driver: local
+
+networks:
+  rma-network:
+    driver: bridge
