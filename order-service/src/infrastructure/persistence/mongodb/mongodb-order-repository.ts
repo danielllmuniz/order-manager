@@ -1,8 +1,8 @@
 import { Model } from 'mongoose';
 import { ILogger } from '../../../application/services/logger.interface';
+import { IOrderRepository } from '../../../application/services/order-repository.interface';
 import { Order } from '../../../domain/entities/order';
 import { OrderFactory } from '../../../domain/factories/order-factory';
-import { IOrderRepository } from '../../../domain/repositories/order-repository';
 import { OrderDocument } from './order.schema';
 
 export class MongodbOrderRepository implements IOrderRepository {
