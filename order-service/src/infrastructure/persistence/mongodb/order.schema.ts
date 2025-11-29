@@ -12,27 +12,30 @@ export const orderSchema = new Schema<OrderDocument>(
     id: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
     },
     status: {
       type: String,
       required: true,
       enum: ['created', 'processing', 'shipped', 'delivered'],
       default: 'created',
+      index: true,
     },
     createdAt: {
       type: Date,
       required: true,
-      default: Date.now,
+      index: true,
     },
     updatedAt: {
       type: Date,
       required: true,
-      default: Date.now,
     },
   },
   {
-    timestamps: false,
+    timestamps: true,
+    _id: true,
   },
 );
+
+orderSchema.index({ status: 1, createdAt: -1 });
+
+orderSchema.index({ createdAt: -1 });
