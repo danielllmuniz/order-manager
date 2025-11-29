@@ -2,6 +2,8 @@
 
 A REST API for order management built with Hexagonal Architecture and Domain-Driven Design.
 
+This project is structured as a **monorepo** to support multiple microservices and simplify the creation of additional services.
+
 ## Quick Start
 
 ### Running with Docker Compose
@@ -14,10 +16,28 @@ The API will be available at `http://localhost:3000`
 
 ### Running Locally
 
+**Prerequisites:**
+- Node.js 20+
+- MongoDB running locally (default: `mongodb://localhost:27017`)
+- RabbitMQ running locally (default: `amqp://localhost:5672`)
+
+**Setup:**
+
 ```bash
+# Navigate to the order-service folder
+cd order-service
+
+# Copy and configure environment variables
+cp .env.example .env
+
+# Install dependencies
 npm install
+
+# Start the development server
 npm run dev
 ```
+
+The API will be available at `http://localhost:3000`
 
 ## Stack
 
@@ -78,3 +98,14 @@ npm test -- --coverage
 # Watch mode
 npm test -- --watch
 ```
+
+## Project Structure - Monorepo
+
+This is a monorepo structure designed to support multiple microservices:
+
+### Why Monorepo?
+
+- **Easier to manage** - All services in one repository
+- **Simplified setup** - Single docker-compose for local development
+- **Consistent patterns** - All services follow the same architecture (Hexagonal + DDD)
+- **Scalable** - Easy to add new microservices (user-service, payment-service, etc.)
