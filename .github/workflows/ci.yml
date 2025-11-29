@@ -1,0 +1,34 @@
+name: CI - Order Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'order-service/**'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start services
+        run: docker-compose up -d
+        working-directory: ./order-service
+
+      - name: Run tests
+        run: docker-compose exec -T api npm test
+        working-directory: ./order-service
+
+      - name: Check coverage
+        run: docker-compose exec -T api npm test -- --coverage
+        working-directory: ./order-service
+
+      - name: Stop services
+        if: always()
+        run: docker-compose down
+        working-directory: ./order-service
