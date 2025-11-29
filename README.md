@@ -123,10 +123,10 @@ Automated tests with GitHub Actions using Docker Compose.
 **Runs on:** Every push to `main`
 
 **What it does:**
-1. Starts Docker Compose (API, MongoDB, RabbitMQ)
-2. Runs all tests
-3. Checks test coverage
-4. Stops services
+1. `docker compose up -d` (API, MongoDB, RabbitMQ)
+2. `docker compose exec api npm test`
+3. `docker compose exec api npm test -- --coverage`
+4. `docker compose down`
 
 See `.github/CI_CD.md` for details.
 
