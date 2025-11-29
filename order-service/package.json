@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest --detectOpenHandles",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "dev": "node --watch src/infrastructure/api/server.ts"
   },
   "keywords": [],
   "author": "Daniel Muniz",
