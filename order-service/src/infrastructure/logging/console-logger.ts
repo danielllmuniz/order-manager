@@ -1,5 +1,7 @@
 import { ILogger } from '../../application/services/logger.interface';
 
+const BUSINESS_ERRORS = ['CannotAdvanceOrderStatusError', 'InvalidOrderStatusError'];
+
 export class ConsoleLogger implements ILogger {
   private getTimestamp(): string {
     return new Date().toISOString();
@@ -28,8 +30,8 @@ export class ConsoleLogger implements ILogger {
     const errorMessage = error ? `${message}: ${errorStr}` : message;
     console.error(this.formatMessage('ERROR', errorMessage, context));
 
-    // Print stack trace if available
-    if (error instanceof Error && error.stack) {
+    const isBusinessError = error instanceof Error && BUSINESS_ERRORS.includes(error.name);
+    if (error instanceof Error && error.stack && !isBusinessError) {
       console.error(error.stack);
     }
   }
