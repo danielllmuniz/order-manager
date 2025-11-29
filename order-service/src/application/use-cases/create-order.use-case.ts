@@ -18,7 +18,7 @@ export class CreateOrderUseCase {
     try {
       this.logger.debug('Creating order from factory');
       const order = OrderFactory.create();
-      const orderId = order.getId().getValue();
+      const orderId = order.getId();
 
       this.logger.debug('Order created successfully', {
         orderId,

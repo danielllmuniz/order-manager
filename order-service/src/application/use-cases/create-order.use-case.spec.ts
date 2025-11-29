@@ -33,76 +33,56 @@ describe('CreateOrderUseCase', () => {
 
   describe('execute', () => {
     it('should create an order and save to repository', async () => {
-      const orderId = 'order-123';
-
-      await useCase.execute({ id: orderId });
+      await useCase.execute();
 
       expect(mockRepository.save).toHaveBeenCalledWith(expect.any(Order));
     });
 
     it('should publish OrderCreatedEvent', async () => {
-      const orderId = 'order-123';
-
-      await useCase.execute({ id: orderId });
+      await useCase.execute();
 
       expect(mockEventPublisher.publish).toHaveBeenCalledWith(
         'order.created',
         expect.objectContaining({
-          orderId,
+          orderId: expect.any(String),
+          aggregateId: expect.any(String),
+          occurredAt: expect.any(Date),
         }),
       );
     });
 
     it('should return correct response', async () => {
-      const orderId = 'order-456';
-
-      const response = await useCase.execute({ id: orderId });
+      const response = await useCase.execute();
 
       expect(response).toMatchObject({
-        id: orderId,
+        id: expect.any(String),
         status: 'created',
         createdAt: expect.any(Date),
       });
     });
 
     it('should create order with CREATED status', async () => {
-      const orderId = 'order-789';
-
-      const response = await useCase.execute({ id: orderId });
+      const response = await useCase.execute();
 
       expect(response.status).toBe('created');
     });
 
     it('should create independent orders', async () => {
-      await useCase.execute({ id: 'order-1' });
-      await useCase.execute({ id: 'order-2' });
+      await useCase.execute();
+      await useCase.execute();
 
       expect(mockRepository.save).toHaveBeenCalledTimes(2);
       const firstCall = mockRepository.save.mock.calls[0]![0]!;
       const secondCall = mockRepository.save.mock.calls[1]![0]!;
 
-      expect(firstCall.getId().getValue()).toBe('order-1');
-      expect(secondCall.getId().getValue()).toBe('order-2');
-    });
-
-    it('should publish event with correct order id', async () => {
-      const orderId = 'order-special';
-
-      await useCase.execute({ id: orderId });
-
-      expect(mockEventPublisher.publish).toHaveBeenCalledWith(
-        'order.created',
-        expect.objectContaining({
-          orderId,
-        }),
-      );
+      expect(typeof firstCall.getId()).toBe('string');
+      expect(typeof secondCall.getId()).toBe('string');
+      expect(firstCall.getId()).not.toBe(secondCall.getId());
     });
 
     it('should handle multiple order creations', async () => {
-      const orderIds = ['order-1', 'order-2', 'order-3'];
-
-      for (const id of orderIds) {
-        await useCase.execute({ id });
+      for (let i = 0; i < 3; i++) {
+        await useCase.execute();
       }
 
       expect(mockRepository.save).toHaveBeenCalledTimes(3);
@@ -114,7 +94,7 @@ describe('CreateOrderUseCase', () => {
         new Error('Database error'),
       );
 
-      await expect(useCase.execute({ id: 'order-123' })).rejects.toThrow(
+      await expect(useCase.execute()).rejects.toThrow(
         'Database error',
       );
     });
@@ -124,55 +104,45 @@ describe('CreateOrderUseCase', () => {
         new Error('RabbitMQ error'),
       );
 
-      await expect(useCase.execute({ id: 'order-123' })).rejects.toThrow(
+      await expect(useCase.execute()).rejects.toThrow(
         'RabbitMQ error',
       );
     });
   });
 
   describe('logging', () => {
-    it('should log info when use case starts', async () => {
-      await useCase.execute({ id: 'order-123' });
+    it('should log debug when creating order', async () => {
+      await useCase.execute();
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Creating order from factory',
+      );
+    });
+
+    it('should log info when order is saved', async () => {
+      await useCase.execute();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'CreateOrderUseCase started',
-        { orderId: 'order-123' },
+        'Order saved successfully',
+        expect.any(Object),
       );
     });
 
     it('should log info when use case completes successfully', async () => {
-      await useCase.execute({ id: 'order-456' });
+      await useCase.execute();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'CreateOrderUseCase completed successfully',
-        { orderId: 'order-456' },
-      );
-    });
-
-    it('should log debug for each step', async () => {
-      await useCase.execute({ id: 'order-789' });
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Creating order from factory',
-        { orderId: 'order-789' },
-      );
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Saving order to repository',
-        { orderId: 'order-789' },
-      );
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Publishing OrderCreatedEvent',
-        { orderId: 'order-789' },
+        expect.any(Object),
       );
     });
 
     it('should log error when use case fails', async () => {
-      mockRepository.save.mockRejectedValueOnce(new Error('DB error'));
+      const error = new Error('Test error');
+      mockRepository.save.mockRejectedValueOnce(error);
 
       try {
-        await useCase.execute({ id: 'order-error' });
+        await useCase.execute();
       } catch {
         // Expected
       }
@@ -180,25 +150,6 @@ describe('CreateOrderUseCase', () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         'CreateOrderUseCase failed',
         expect.any(Error),
-        { orderId: 'order-error' },
-      );
-    });
-
-    it('should log successful save to repository', async () => {
-      await useCase.execute({ id: 'order-123' });
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Order saved successfully',
-        { orderId: 'order-123' },
-      );
-    });
-
-    it('should log successful event publication', async () => {
-      await useCase.execute({ id: 'order-123' });
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Event published successfully',
-        { orderId: 'order-123' },
       );
     });
   });

@@ -13,29 +13,31 @@ export class MongodbOrderRepository implements IOrderRepository {
 
   async save(order: Order): Promise<Order> {
     try {
+      const orderId = order.getId();
       this.logger.debug('Saving order to MongoDB', {
-        orderId: order.getId().getValue(),
+        orderId,
       });
 
       const orderData = {
-        id: order.getId().getValue(),
+        id: orderId,
         status: order.getStatus().toString(),
         createdAt: order.getCreatedAt(),
         updatedAt: order.getUpdatedAt(),
       };
 
-      await this.orderModel.updateOne({ id: order.getId().getValue() }, orderData, {
+      await this.orderModel.updateOne({ id: orderId }, orderData, {
         upsert: true,
       });
 
       this.logger.debug('Order saved successfully to MongoDB', {
-        orderId: order.getId().getValue(),
+        orderId,
       });
 
       return order;
     } catch (error) {
+      const orderId = order.getId();
       this.logger.error('Failed to save order to MongoDB', error, {
-        orderId: order.getId().getValue(),
+        orderId,
       });
       throw error;
     }
@@ -73,36 +75,38 @@ export class MongodbOrderRepository implements IOrderRepository {
 
   async update(order: Order): Promise<Order> {
     try {
+      const orderId = order.getId();
       this.logger.debug('Updating order in MongoDB', {
-        orderId: order.getId().getValue(),
+        orderId,
       });
 
       const orderData = {
-        id: order.getId().getValue(),
+        id: orderId,
         status: order.getStatus().toString(),
         createdAt: order.getCreatedAt(),
         updatedAt: order.getUpdatedAt(),
       };
 
       const result = await this.orderModel.updateOne(
-        { id: order.getId().getValue() },
+        { id: orderId },
         orderData,
       );
 
       if (result.matchedCount === 0) {
         this.logger.warn('Order not found for update in MongoDB', {
-          orderId: order.getId().getValue(),
+          orderId,
         });
       }
 
       this.logger.debug('Order updated successfully in MongoDB', {
-        orderId: order.getId().getValue(),
+        orderId,
       });
 
       return order;
     } catch (error) {
+      const orderId = order.getId();
       this.logger.error('Failed to update order in MongoDB', error, {
-        orderId: order.getId().getValue(),
+        orderId,
       });
       throw error;
     }

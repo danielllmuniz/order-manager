@@ -1,4 +1,3 @@
-import { OrderId } from '../value-objects/order-id';
 import { OrderStatus, OrderStatusEnum } from '../value-objects/order-status';
 
 export class CannotAdvanceOrderStatusError extends Error {
@@ -9,7 +8,7 @@ export class CannotAdvanceOrderStatusError extends Error {
 }
 
 export class Order {
-  private readonly id: OrderId;
+  private readonly id: string;
   private readonly createdAt: Date;
   private status: OrderStatus;
   private updatedAt: Date;
@@ -22,7 +21,7 @@ export class Order {
   };
 
   constructor(
-    id: OrderId,
+    id: string,
     status?: OrderStatus,
     createdAt?: Date,
   ) {
@@ -32,7 +31,7 @@ export class Order {
     this.updatedAt = new Date();
   }
 
-  getId(): OrderId {
+  getId(): string {
     return this.id;
   }
 

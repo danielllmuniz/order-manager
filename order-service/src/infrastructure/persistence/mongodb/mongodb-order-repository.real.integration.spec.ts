@@ -63,11 +63,11 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
 
   describe('Save Operations', () => {
     it('should save an order and retrieve it from database', async () => {
-      const order = OrderFactory.create('integration-order-1');
+      const order = OrderFactory.createWithStatus('integration-order-1', 'created');
       const savedOrder = await repository!.save(order);
 
       expect(savedOrder).toBeDefined();
-      expect(savedOrder.getId().getValue()).toBe('integration-order-1');
+      expect(savedOrder.getId()).toBe('integration-order-1');
 
       const foundInDb = await orderModel!.findOne({ id: 'integration-order-1' });
       expect(foundInDb).toBeDefined();
@@ -75,7 +75,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
     });
 
     it('should update existing order when saving with same id', async () => {
-      const order1 = OrderFactory.create('upsert-test');
+      const order1 = OrderFactory.createWithStatus('upsert-test', 'created');
       await repository!.save(order1);
 
       const order2 = OrderFactory.createWithStatus('upsert-test', 'processing');
@@ -89,7 +89,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
     });
 
     it('should save multiple orders without conflicts', async () => {
-      const orders = Array.from({ length: 5 }, (_, i) => OrderFactory.create(`batch-${i}`));
+      const orders = Array.from({ length: 5 }, (_, i) => OrderFactory.createWithStatus(`batch-${i}`, 'created'));
 
       for (const order of orders) {
         await repository!.save(order);
@@ -102,13 +102,13 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
 
   describe('Find Operations', () => {
     it('should find saved order by id', async () => {
-      const order = OrderFactory.create('find-test-1');
+      const order = OrderFactory.createWithStatus('find-test-1', 'created');
       await repository!.save(order);
 
       const found = await repository!.findById('find-test-1');
 
       expect(found).not.toBeNull();
-      expect(found?.getId().getValue()).toBe('find-test-1');
+      expect(found?.getId()).toBe('find-test-1');
       expect(found?.getStatus().toString()).toBe('created');
     });
 
@@ -134,7 +134,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
 
   describe('Update Operations', () => {
     it('should update order status in database', async () => {
-      const order = OrderFactory.create('update-test-1');
+      const order = OrderFactory.createWithStatus('update-test-1', 'created');
       await repository!.save(order);
 
       const updatedOrder = OrderFactory.createWithStatus('update-test-1', 'processing');
@@ -146,7 +146,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
 
     it('should handle status progression correctly', async () => {
       const orderId = 'progression-test';
-      let order = OrderFactory.create(orderId);
+      let order = OrderFactory.createWithStatus(orderId, 'created');
       await repository!.save(order);
 
       order = OrderFactory.createWithStatus(orderId, 'processing');
@@ -169,7 +169,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
   describe('Data Integrity', () => {
     it('should maintain referential integrity across operations', async () => {
       const orderId = 'integrity-test';
-      const order = OrderFactory.create(orderId);
+      const order = OrderFactory.createWithStatus(orderId, 'created');
 
       const saved = await repository!.save(order);
       const found = await repository!.findById(orderId);
@@ -177,14 +177,14 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
       await repository!.update(updated);
       const finalFound = await repository!.findById(orderId);
 
-      expect(saved.getId().getValue()).toBe(found?.getId().getValue());
-      expect(found?.getId().getValue()).toBe(finalFound?.getId().getValue());
+      expect(saved.getId()).toBe(found?.getId());
+      expect(found?.getId()).toBe(finalFound?.getId());
     });
 
     it('should ensure id uniqueness constraint', async () => {
       const orderId = 'unique-test';
-      const order1 = OrderFactory.create(orderId);
-      const order2 = OrderFactory.create(orderId);
+      const order1 = OrderFactory.createWithStatus(orderId, 'created');
+      const order2 = OrderFactory.createWithStatus(orderId, 'created');
 
       await repository!.save(order1);
       await repository!.save(order2);
@@ -197,7 +197,7 @@ describe('MongodbOrderRepository - Real Integration Tests', () => {
   describe('Performance', () => {
     it('should handle bulk save operations efficiently', async () => {
       const bulkOrders = Array.from({ length: 10 }, (_, i) =>
-        OrderFactory.create(`bulk-${i}`),
+        OrderFactory.createWithStatus(`bulk-${i}`, 'created'),
       );
 
       await Promise.all(bulkOrders.map((order) => repository!.save(order)));

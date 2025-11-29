@@ -34,27 +34,29 @@ describe('UpdateOrderStatusUseCase', () => {
 
   describe('execute', () => {
     it('should advance order status from CREATED to PROCESSING', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-123' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.previousStatus).toBe('created');
       expect(response.newStatus).toBe('processing');
     });
 
     it('should update order in repository', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      await useCase.execute({ id: 'order-123' });
+      await useCase.execute({ id: orderId });
 
       expect(mockRepository.update).toHaveBeenCalledWith(order);
     });
 
     it('should publish OrderStatusChangedEvent', async () => {
-      const orderId = 'order-123';
-      const order = OrderFactory.create(orderId);
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
       await useCase.execute({ id: orderId });
@@ -62,7 +64,7 @@ describe('UpdateOrderStatusUseCase', () => {
       expect(mockEventPublisher.publish).toHaveBeenCalledWith(
         'order.status-changed',
         expect.objectContaining({
-          orderId,
+          orderId: expect.any(String),
           previousStatus: 'created',
           newStatus: 'processing',
         }),
@@ -70,30 +72,36 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should handle transition from PROCESSING to SHIPPED', async () => {
-      const order = OrderFactory.createWithStatus('order-456', 'processing');
+      const order = OrderFactory.createWithStatus(
+        'generated-id',
+        'processing',
+      );
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-456' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.previousStatus).toBe('processing');
       expect(response.newStatus).toBe('shipped');
     });
 
     it('should handle transition from SHIPPED to DELIVERED', async () => {
-      const order = OrderFactory.createWithStatus('order-789', 'shipped');
+      const order = OrderFactory.createWithStatus('generated-id', 'shipped');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-789' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.previousStatus).toBe('shipped');
       expect(response.newStatus).toBe('delivered');
     });
 
     it('should throw error when trying to advance from DELIVERED', async () => {
-      const order = OrderFactory.createWithStatus('order-delivered', 'delivered');
+      const order = OrderFactory.createWithStatus('generated-id', 'delivered');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      await expect(useCase.execute({ id: 'order-delivered' })).rejects.toThrow(
+      await expect(useCase.execute({ id: orderId })).rejects.toThrow(
         CannotAdvanceOrderStatusError,
       );
     });
@@ -105,13 +113,14 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should return correct response structure', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-123' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response).toMatchObject({
-        id: 'order-123',
+        id: orderId,
         previousStatus: expect.any(String),
         newStatus: expect.any(String),
         updatedAt: expect.any(Date),
@@ -119,11 +128,12 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should not publish event if order advancement fails', async () => {
-      const order = OrderFactory.createWithStatus('order-delivered', 'delivered');
+      const order = OrderFactory.createWithStatus('generated-id', 'delivered');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
       try {
-        await useCase.execute({ id: 'order-delivered' });
+        await useCase.execute({ id: orderId });
       } catch {
         // Expected error
       }
@@ -132,11 +142,12 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should not update repository if order advancement fails', async () => {
-      const order = OrderFactory.createWithStatus('order-delivered', 'delivered');
+      const order = OrderFactory.createWithStatus('generated-id', 'delivered');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
       try {
-        await useCase.execute({ id: 'order-delivered' });
+        await useCase.execute({ id: orderId });
       } catch {
         // Expected error
       }
@@ -145,38 +156,38 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should handle complete order lifecycle', async () => {
-      const order1 = OrderFactory.create('order-lifecycle');
+      const order1 = OrderFactory.create();
+      const orderId = order1.getId();
       mockRepository.findById.mockResolvedValueOnce(order1);
-      let response = await useCase.execute({ id: 'order-lifecycle' });
+      let response = await useCase.execute({ id: orderId });
       expect(response.newStatus).toBe('processing');
 
-      const order2 = OrderFactory.createWithStatus(
-        'order-lifecycle',
-        'processing',
-      );
+      const order2 = OrderFactory.createWithStatus(orderId, 'processing');
       mockRepository.findById.mockResolvedValueOnce(order2);
-      response = await useCase.execute({ id: 'order-lifecycle' });
+      response = await useCase.execute({ id: orderId });
       expect(response.newStatus).toBe('shipped');
 
-      const order3 = OrderFactory.createWithStatus('order-lifecycle', 'shipped');
+      const order3 = OrderFactory.createWithStatus(orderId, 'shipped');
       mockRepository.findById.mockResolvedValueOnce(order3);
-      response = await useCase.execute({ id: 'order-lifecycle' });
+      response = await useCase.execute({ id: orderId });
       expect(response.newStatus).toBe('delivered');
 
       expect(mockEventPublisher.publish).toHaveBeenCalledTimes(3);
     });
 
     it('should handle multiple concurrent status updates', async () => {
-      const order1 = OrderFactory.create('order-1');
-      const order2 = OrderFactory.create('order-2');
+      const order1 = OrderFactory.create();
+      const order2 = OrderFactory.create();
+      const id1 = order1.getId();
+      const id2 = order2.getId();
 
       mockRepository.findById
         .mockResolvedValueOnce(order1)
         .mockResolvedValueOnce(order2);
 
       await Promise.all([
-        useCase.execute({ id: 'order-1' }),
-        useCase.execute({ id: 'order-2' }),
+        useCase.execute({ id: id1 }),
+        useCase.execute({ id: id2 }),
       ]);
 
       expect(mockRepository.update).toHaveBeenCalledTimes(2);
@@ -184,25 +195,27 @@ describe('UpdateOrderStatusUseCase', () => {
     });
 
     it('should handle repository update failure', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
       mockRepository.update.mockRejectedValueOnce(
         new Error('Database error'),
       );
 
-      await expect(useCase.execute({ id: 'order-123' })).rejects.toThrow(
+      await expect(useCase.execute({ id: orderId })).rejects.toThrow(
         'Database error',
       );
     });
 
     it('should handle event publisher failure', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
       mockEventPublisher.publish.mockRejectedValueOnce(
         new Error('RabbitMQ error'),
       );
 
-      await expect(useCase.execute({ id: 'order-123' })).rejects.toThrow(
+      await expect(useCase.execute({ id: orderId })).rejects.toThrow(
         'RabbitMQ error',
       );
     });

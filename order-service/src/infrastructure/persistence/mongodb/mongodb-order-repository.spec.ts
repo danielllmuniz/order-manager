@@ -27,7 +27,7 @@ describe('MongodbOrderRepository', () => {
 
   describe('save', () => {
     it('should save an order to MongoDB', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.createWithStatus('order-123', 'created');
       (mockOrderModel.updateOne as jest.Mock).mockResolvedValueOnce({
         modifiedCount: 1,
         upsertedCount: 1,
@@ -49,17 +49,17 @@ describe('MongodbOrderRepository', () => {
     });
 
     it('should return the saved order', async () => {
-      const order = OrderFactory.create('order-456');
+      const order = OrderFactory.createWithStatus('order-456', 'created');
       (mockOrderModel.updateOne as jest.Mock).mockResolvedValueOnce({});
 
       const result = await repository.save(order);
 
-      expect(result.getId().getValue()).toBe('order-456');
+      expect(result.getId()).toBe('order-456');
       expect(result.getStatus().toString()).toBe('created');
     });
 
     it('should log debug when saving order', async () => {
-      const order = OrderFactory.create('order-789');
+      const order = OrderFactory.createWithStatus('order-789', 'created');
       (mockOrderModel.updateOne as jest.Mock).mockResolvedValueOnce({});
 
       await repository.save(order);
@@ -74,7 +74,7 @@ describe('MongodbOrderRepository', () => {
     });
 
     it('should handle MongoDB errors', async () => {
-      const order = OrderFactory.create('order-error');
+      const order = OrderFactory.createWithStatus('order-error', 'created');
       const error = new Error('Database error');
       (mockOrderModel.updateOne as jest.Mock).mockRejectedValueOnce(error);
 
@@ -88,8 +88,8 @@ describe('MongodbOrderRepository', () => {
     });
 
     it('should handle multiple saves', async () => {
-      const order1 = OrderFactory.create('order-1');
-      const order2 = OrderFactory.create('order-2');
+      const order1 = OrderFactory.createWithStatus('order-1', 'created');
+      const order2 = OrderFactory.createWithStatus('order-2', 'created');
       (mockOrderModel.updateOne as jest.Mock).mockResolvedValue({});
 
       await repository.save(order1);
@@ -114,7 +114,7 @@ describe('MongodbOrderRepository', () => {
       const result = await repository.findById('order-123');
 
       expect(result).not.toBeNull();
-      expect(result?.getId().getValue()).toBe('order-123');
+      expect(result?.getId()).toBe('order-123');
       expect(mockOrderModel.findOne).toHaveBeenCalledWith({ id: 'order-123' });
     });
 
@@ -207,8 +207,8 @@ describe('MongodbOrderRepository', () => {
       const result1 = await repository.findById('order-1');
       const result2 = await repository.findById('order-2');
 
-      expect(result1?.getId().getValue()).toBe('order-1');
-      expect(result2?.getId().getValue()).toBe('order-2');
+      expect(result1?.getId()).toBe('order-1');
+      expect(result2?.getId()).toBe('order-2');
     });
   });
 
@@ -240,7 +240,7 @@ describe('MongodbOrderRepository', () => {
 
       const result = await repository.update(order);
 
-      expect(result.getId().getValue()).toBe('order-789');
+      expect(result.getId()).toBe('order-789');
       expect(result.getStatus().toString()).toBe('shipped');
     });
 
@@ -262,7 +262,7 @@ describe('MongodbOrderRepository', () => {
     });
 
     it('should log warning when order not found for update', async () => {
-      const order = OrderFactory.create('order-not-found');
+      const order = OrderFactory.createWithStatus('order-not-found', 'created');
       (mockOrderModel.updateOne as jest.Mock).mockResolvedValueOnce({
         matchedCount: 0,
       });
@@ -276,7 +276,7 @@ describe('MongodbOrderRepository', () => {
     });
 
     it('should handle MongoDB errors during update', async () => {
-      const order = OrderFactory.create('order-error');
+      const order = OrderFactory.createWithStatus('order-error', 'created');
       const error = new Error('Update failed');
       (mockOrderModel.updateOne as jest.Mock).mockRejectedValueOnce(error);
 

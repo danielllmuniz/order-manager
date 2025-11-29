@@ -27,8 +27,8 @@ describe('GetOrderStatusUseCase', () => {
 
   describe('execute', () => {
     it('should return order status when order exists', async () => {
-      const orderId = 'order-123';
-      const order = OrderFactory.create(orderId);
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
       const response = await useCase.execute({ id: orderId });
@@ -51,54 +51,59 @@ describe('GetOrderStatusUseCase', () => {
     });
 
     it('should include canAdvance flag in response', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-123' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.canAdvance).toBe(true);
     });
 
     it('should return correct status for CREATED order', async () => {
-      const order = OrderFactory.create('order-1');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-1' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.status).toBe('created');
     });
 
     it('should return correct status for PROCESSING order', async () => {
-      const order = OrderFactory.createWithStatus('order-2', 'processing');
+      const order = OrderFactory.createWithStatus('id', 'processing');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-2' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.status).toBe('processing');
     });
 
     it('should return correct status for SHIPPED order', async () => {
-      const order = OrderFactory.createWithStatus('order-3', 'shipped');
+      const order = OrderFactory.createWithStatus('id', 'shipped');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-3' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.status).toBe('shipped');
     });
 
     it('should return correct status for DELIVERED order', async () => {
-      const order = OrderFactory.createWithStatus('order-4', 'delivered');
+      const order = OrderFactory.createWithStatus('id', 'delivered');
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-4' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.status).toBe('delivered');
       expect(response.canAdvance).toBe(false);
     });
 
     it('should query repository with correct order id', async () => {
-      const orderId = 'order-special';
-      const order = OrderFactory.create(orderId);
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       mockRepository.findById.mockResolvedValueOnce(order);
 
       await useCase.execute({ id: orderId });
@@ -107,13 +112,14 @@ describe('GetOrderStatusUseCase', () => {
     });
 
     it('should return immutable timestamps', async () => {
-      const order = OrderFactory.create('order-123');
+      const order = OrderFactory.create();
+      const orderId = order.getId();
       const originalCreatedAt = order.getCreatedAt();
       const originalUpdatedAt = order.getUpdatedAt();
 
       mockRepository.findById.mockResolvedValueOnce(order);
 
-      const response = await useCase.execute({ id: 'order-123' });
+      const response = await useCase.execute({ id: orderId });
 
       expect(response.createdAt).toEqual(originalCreatedAt);
       expect(response.updatedAt).toEqual(originalUpdatedAt);
@@ -130,17 +136,19 @@ describe('GetOrderStatusUseCase', () => {
     });
 
     it('should retrieve multiple different orders', async () => {
-      const order1 = OrderFactory.create('order-1');
-      const order2 = OrderFactory.create('order-2');
+      const order1 = OrderFactory.create();
+      const order2 = OrderFactory.create();
+      const id1 = order1.getId();
+      const id2 = order2.getId();
 
       mockRepository.findById.mockResolvedValueOnce(order1);
-      const response1 = await useCase.execute({ id: 'order-1' });
+      const response1 = await useCase.execute({ id: id1 });
 
       mockRepository.findById.mockResolvedValueOnce(order2);
-      const response2 = await useCase.execute({ id: 'order-2' });
+      const response2 = await useCase.execute({ id: id2 });
 
-      expect(response1.id).toBe('order-1');
-      expect(response2.id).toBe('order-2');
+      expect(response1.id).toBe(id1);
+      expect(response2.id).toBe(id2);
     });
   });
 

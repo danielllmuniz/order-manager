@@ -56,7 +56,7 @@ export class UpdateOrderStatusUseCase {
         newStatus,
       });
       const event = new OrderStatusChangedEvent(
-        order.getId().getValue(),
+        order.getId(),
         previousStatus,
         newStatus,
       );
@@ -67,7 +67,7 @@ export class UpdateOrderStatusUseCase {
       });
 
       const response = {
-        id: order.getId().getValue(),
+        id: order.getId(),
         previousStatus,
         newStatus,
         updatedAt: order.getUpdatedAt(),

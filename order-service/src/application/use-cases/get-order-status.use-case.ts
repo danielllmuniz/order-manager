@@ -36,7 +36,7 @@ export class GetOrderStatusUseCase {
       });
 
       const response = {
-        id: order.getId().getValue(),
+        id: order.getId(),
         status: order.getStatus().toString(),
         createdAt: order.getCreatedAt(),
         updatedAt: order.getUpdatedAt(),

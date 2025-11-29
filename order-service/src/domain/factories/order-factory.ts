@@ -1,13 +1,11 @@
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { Order } from '../entities/order';
-import { OrderId } from '../value-objects/order-id';
 import { OrderStatus, OrderStatusEnum } from '../value-objects/order-status';
 
 export class OrderFactory {
   static create(): Order {
-    const id = uuidv4();
-    const orderId = OrderId.create(id);
-    return new Order(orderId, OrderStatus.created());
+    const id = randomUUID();
+    return new Order(id, OrderStatus.created());
   }
 
   static reconstruct(
@@ -15,14 +13,12 @@ export class OrderFactory {
     status: OrderStatusEnum,
     createdAt: Date,
   ): Order {
-    const orderId = OrderId.create(id);
     const orderStatus = OrderStatus.create(status);
-    return new Order(orderId, orderStatus, createdAt);
+    return new Order(id, orderStatus, createdAt);
   }
 
   static createWithStatus(id: string, status: OrderStatusEnum | string): Order {
-    const orderId = OrderId.create(id);
     const orderStatus = OrderStatus.create(status);
-    return new Order(orderId, orderStatus);
+    return new Order(id, orderStatus);
   }
 }
