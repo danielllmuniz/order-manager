@@ -28,7 +28,7 @@ export const healthRoute = express.Router();
  *                   type: number
  *                   description: Server uptime in seconds
  */
-healthRoute.get('/', (req: Request, res: Response) => {
+healthRoute.get('/', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'UP',
     timestamp: new Date().toISOString(),

@@ -4,8 +4,7 @@ import { errorHandler, notFoundHandler } from './error-handler';
 describe('Error Handler Middleware', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let statusCode: number;
+  let mockNext: jest.Mock;
 
   beforeEach(() => {
     mockRequest = {
@@ -13,15 +12,13 @@ describe('Error Handler Middleware', () => {
       path: '/api/orders',
     };
 
-    statusCode = 200;
     mockResponse = {
-      status: jest.fn().mockImplementation((code) => {
-        statusCode = code;
-        return mockResponse;
-      }),
+      status: jest.fn().mockReturnThis(),
       statusCode: 200,
       json: jest.fn().mockReturnThis(),
     };
+
+    mockNext = jest.fn();
   });
 
   afterEach(() => {
@@ -29,84 +26,115 @@ describe('Error Handler Middleware', () => {
   });
 
   describe('errorHandler', () => {
-    it('should use custom status code when not 200', () => {
-      const error = new Error('Database error');
-      mockResponse.statusCode = 500;
+    it('should handle business errors with 400 status', () => {
+      const error = new Error('Order already delivered');
+      error.name = 'CannotAdvanceOrderStatusError';
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
-        statusCode: 500,
-        message: 'Database error',
-      });
-    });
-
-    it('should default to 500 status code when statusCode is 200', () => {
-      const error = new Error('Internal error');
-      mockResponse.statusCode = 200;
-
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
-        statusCode: 500,
-        message: 'Internal error',
-      });
-    });
-
-    it('should use default message when error message is empty', () => {
-      const error = new Error();
-      mockResponse.statusCode = 400;
-
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
-        statusCode: 400,
-        message: 'Internal Server Error',
+        success: false,
+        error: 'CannotAdvanceOrderStatusError',
+        message: 'Order already delivered',
       });
     });
 
-    it('should handle 400 Bad Request errors', () => {
-      const error = new Error('Invalid input');
-      mockResponse.statusCode = 400;
+    it('should handle InvalidOrderStatusError with 400 status', () => {
+      const error = new Error('Invalid status provided');
+      error.name = 'InvalidOrderStatusError';
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
-        statusCode: 400,
-        message: 'Invalid input',
+        success: false,
+        error: 'InvalidOrderStatusError',
+        message: 'Invalid status provided',
       });
     });
 
-    it('should handle 404 Not Found errors', () => {
-      const error = new Error('Resource not found');
-      mockResponse.statusCode = 404;
+    it('should handle ValidationError with 400 status and details', () => {
+      const error = new Error('Invalid request data');
+      error.name = 'ValidationError';
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'ValidationError',
+        message: 'Invalid request data',
+        details: 'Invalid request data',
+      });
+    });
+
+    it('should handle NotFoundError with 404 status', () => {
+      const error = new Error('Order not found');
+      error.name = 'NotFoundError';
+
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
 
       expect(mockResponse.status).toHaveBeenCalledWith(404);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
-        statusCode: 404,
-        message: 'Resource not found',
+        success: false,
+        error: 'NotFoundError',
+        message: 'Order not found',
       });
     });
 
-    it('should always set error flag to true', () => {
-      const error = new Error('Any error');
-      mockResponse.statusCode = 500;
+    it('should handle errors with "not found" in message with 404 status', () => {
+      const error = new Error('Resource not found in database');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
 
-      const callArgs = (mockResponse.json as jest.Mock).mock.calls[0][0];
-      expect(callArgs.error).toBe(true);
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'NotFoundError',
+        message: 'Resource not found in database',
+      });
+    });
+
+    it('should handle MongoError with 503 status', () => {
+      const error = new Error('connection refused');
+      error.name = 'MongoError';
+
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(503);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'DatabaseError',
+        message: 'Database connection error. Please try again later.',
+      });
+    });
+
+    it('should handle MongooseError with 503 status', () => {
+      const error = new Error('connection timeout');
+      error.name = 'MongooseError';
+
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(503);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'DatabaseError',
+        message: 'Database connection error. Please try again later.',
+      });
+    });
+
+    it('should handle generic errors with 500 status', () => {
+      const error = new Error('Unexpected error');
+
+      errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext as any);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'InternalServerError',
+        message: 'An unexpected error occurred. Please try again later.',
+      });
     });
   });
 
@@ -126,17 +154,18 @@ describe('Error Handler Middleware', () => {
       notFoundHandler(testRequest as Request, mockResponse as Response);
 
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: true,
+        success: false,
+        error: 'NotFoundError',
         statusCode: 404,
         message: 'Route POST /api/orders/123 not found',
       });
     });
 
-    it('should set error flag to true', () => {
+    it('should set success flag to false', () => {
       notFoundHandler(mockRequest as Request, mockResponse as Response);
 
       const callArgs = (mockResponse.json as jest.Mock).mock.calls[0][0];
-      expect(callArgs.error).toBe(true);
+      expect(callArgs.success).toBe(false);
     });
 
     it('should format message correctly for different HTTP methods', () => {
@@ -169,6 +198,13 @@ describe('Error Handler Middleware', () => {
 
       const callArgs = (mockResponse.json as jest.Mock).mock.calls[0][0];
       expect(callArgs.statusCode).toBe(404);
+    });
+
+    it('should have NotFoundError as error type', () => {
+      notFoundHandler(mockRequest as Request, mockResponse as Response);
+
+      const callArgs = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(callArgs.error).toBe('NotFoundError');
     });
   });
 });

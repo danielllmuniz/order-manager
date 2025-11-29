@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CreateOrderController } from './create-order.controller';
 import { container } from '../../../infrastructure/container';
 
@@ -12,6 +12,7 @@ describe('CreateOrderController', () => {
   let controller: CreateOrderController;
   let mockResponse: Partial<Response>;
   let mockRequest: Partial<Request>;
+  let mockNext: jest.Mock;
   let mockUseCase: any;
 
   beforeEach(() => {
@@ -25,6 +26,8 @@ describe('CreateOrderController', () => {
     mockRequest = {
       body: {},
     };
+
+    mockNext = jest.fn();
 
     mockUseCase = {
       execute: jest.fn(),
@@ -47,7 +50,11 @@ describe('CreateOrderController', () => {
 
       mockUseCase.execute.mockResolvedValue(mockOrderData);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -56,17 +63,17 @@ describe('CreateOrderController', () => {
       });
     });
 
-    it('should handle use case errors with 500 status', async () => {
-      const errorMessage = 'Database connection failed';
-      mockUseCase.execute.mockRejectedValue(new Error(errorMessage));
+    it('should delegate use case errors to error handler middleware', async () => {
+      const error = new Error('Database connection failed');
+      mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: errorMessage,
-      });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
     it('should get use case from container', async () => {
@@ -75,29 +82,40 @@ describe('CreateOrderController', () => {
         status: 'CREATED',
       });
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(container.getCreateOrderUseCase).toHaveBeenCalled();
     });
 
-    it('should handle unknown errors gracefully', async () => {
-      const unknownError = { message: 'Unknown error occurred' };
+    it('should delegate unknown errors to error handler middleware', async () => {
+      const unknownError = new TypeError('Type mismatch');
       mockUseCase.execute.mockRejectedValue(unknownError);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(unknownError);
     });
 
-    it('should handle object without message property', async () => {
-      const errorObject = { code: 'CUSTOM_ERROR' };
-      mockUseCase.execute.mockRejectedValue(errorObject);
+    it('should not call response.json on error', async () => {
+      const error = new Error('Some error');
+      mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalled();
+      expect(mockResponse.status).not.toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 });

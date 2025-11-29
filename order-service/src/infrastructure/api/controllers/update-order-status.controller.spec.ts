@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { UpdateOrderStatusController } from './update-order-status.controller';
 import { CannotAdvanceOrderStatusError } from '../../../domain/entities/order';
 import { OrderStatusEnum } from '../../../domain/value-objects/order-status';
@@ -14,6 +14,7 @@ describe('UpdateOrderStatusController', () => {
   let controller: UpdateOrderStatusController;
   let mockResponse: Partial<Response>;
   let mockRequest: Partial<Request>;
+  let mockNext: jest.Mock;
   let mockUseCase: any;
 
   beforeEach(() => {
@@ -27,6 +28,8 @@ describe('UpdateOrderStatusController', () => {
     mockRequest = {
       params: {},
     };
+
+    mockNext = jest.fn();
 
     mockUseCase = {
       execute: jest.fn(),
@@ -43,12 +46,17 @@ describe('UpdateOrderStatusController', () => {
     it('should return 400 when order ID is missing', async () => {
       mockRequest.params = {};
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Order ID is required',
+        error: 'ValidationError',
+        message: 'Order ID is required',
       });
       expect(mockUseCase.execute).not.toHaveBeenCalled();
     });
@@ -65,7 +73,11 @@ describe('UpdateOrderStatusController', () => {
 
       mockUseCase.execute.mockResolvedValue(mockOrderData);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -75,53 +87,53 @@ describe('UpdateOrderStatusController', () => {
       expect(mockUseCase.execute).toHaveBeenCalledWith({ id: orderId });
     });
 
-    it('should return 400 when cannot advance order status', async () => {
+    it('should delegate business errors to error handler middleware', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
       mockRequest.params = { id: orderId };
 
       const error = new CannotAdvanceOrderStatusError(OrderStatusEnum.DELIVERED);
       mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: error.message,
-      });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 404 when order is not found', async () => {
+    it('should delegate not found errors to error handler middleware', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
       mockRequest.params = { id: orderId };
 
       const notFoundError = new Error('Order not found');
-      notFoundError.name = 'OrderNotFoundError';
+      notFoundError.name = 'NotFoundError';
       mockUseCase.execute.mockRejectedValue(notFoundError);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(404);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Order not found',
-      });
+      expect(mockNext).toHaveBeenCalledWith(notFoundError);
     });
 
-    it('should return 500 for generic errors', async () => {
+    it('should delegate generic errors to error handler middleware', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
       mockRequest.params = { id: orderId };
 
       const error = new Error('Database error');
       mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Database error',
-      });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
     it('should get use case from container', async () => {
@@ -131,20 +143,28 @@ describe('UpdateOrderStatusController', () => {
         status: 'PROCESSING',
       });
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(container.getUpdateOrderStatusUseCase).toHaveBeenCalled();
     });
 
-    it('should handle error instances other than CannotAdvanceOrderStatusError', async () => {
+    it('should not call response methods for errors', async () => {
       mockRequest.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
       const error = new TypeError('Type mismatch');
       mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockResponse.status).not.toHaveBeenCalledWith(500);
     });
   });
 });

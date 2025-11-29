@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { GetOrderStatusController } from './get-order-status.controller';
 import { container } from '../../../infrastructure/container';
 
@@ -12,6 +12,7 @@ describe('GetOrderStatusController', () => {
   let controller: GetOrderStatusController;
   let mockResponse: Partial<Response>;
   let mockRequest: Partial<Request>;
+  let mockNext: jest.Mock;
   let mockUseCase: any;
 
   beforeEach(() => {
@@ -25,6 +26,8 @@ describe('GetOrderStatusController', () => {
     mockRequest = {
       params: {},
     };
+
+    mockNext = jest.fn();
 
     mockUseCase = {
       execute: jest.fn(),
@@ -41,12 +44,17 @@ describe('GetOrderStatusController', () => {
     it('should return 400 when order ID is missing', async () => {
       mockRequest.params = {};
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Order ID is required',
+        error: 'ValidationError',
+        message: 'Order ID is required',
       });
       expect(mockUseCase.execute).not.toHaveBeenCalled();
     });
@@ -63,7 +71,11 @@ describe('GetOrderStatusController', () => {
 
       mockUseCase.execute.mockResolvedValue(mockOrderData);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -73,57 +85,79 @@ describe('GetOrderStatusController', () => {
       expect(mockUseCase.execute).toHaveBeenCalledWith({ id: orderId });
     });
 
-    it('should return 404 when order is not found', async () => {
+    it('should delegate not found errors to error handler middleware', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
       mockRequest.params = { id: orderId };
 
       const notFoundError = new Error('Order not found');
-      notFoundError.name = 'OrderNotFoundError';
+      notFoundError.name = 'NotFoundError';
       mockUseCase.execute.mockRejectedValue(notFoundError);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(404);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Order not found',
-      });
+      expect(mockNext).toHaveBeenCalledWith(notFoundError);
     });
 
-    it('should return 500 for generic errors', async () => {
+    it('should delegate generic errors to error handler middleware', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
       mockRequest.params = { id: orderId };
 
       const error = new Error('Database error');
       mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Database error',
-      });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
     it('should get use case from container', async () => {
       mockRequest.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
       mockUseCase.execute.mockResolvedValue({ id: 'test', status: 'CREATED' });
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
       expect(container.getGetOrderStatusUseCase).toHaveBeenCalled();
     });
 
-    it('should handle errors with null message', async () => {
+    it('should delegate errors with null message to error handler middleware', async () => {
       mockRequest.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
       const error: any = { name: 'UnknownError' };
       mockUseCase.execute.mockRejectedValue(error);
 
-      await controller.handle(mockRequest as Request, mockResponse as Response);
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+
+    it('should not call response methods for errors', async () => {
+      mockRequest.params = { id: '550e8400-e29b-41d4-a716-446655440000' };
+      const error = new Error('Database error');
+      mockUseCase.execute.mockRejectedValue(error);
+
+      await controller.handle(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext as NextFunction,
+      );
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockResponse.status).not.toHaveBeenCalledWith(500);
     });
   });
 });

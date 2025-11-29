@@ -42,8 +42,8 @@ const updateOrderStatusController = new UpdateOrderStatusController();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-orderRoute.post('/', async (req: Request, res: Response) => {
-  await createOrderController.handle(req, res);
+orderRoute.post('/', async (req: Request, res: Response, next) => {
+  await createOrderController.handle(req, res, next);
 });
 
 /**
@@ -81,8 +81,8 @@ orderRoute.post('/', async (req: Request, res: Response) => {
  *       500:
  *         description: Server error
  */
-orderRoute.get('/:id', async (req: Request, res: Response) => {
-  await getOrderStatusController.handle(req, res);
+orderRoute.get('/:id', async (req: Request, res: Response, next) => {
+  await getOrderStatusController.handle(req, res, next);
 });
 
 /**
@@ -126,6 +126,6 @@ orderRoute.get('/:id', async (req: Request, res: Response) => {
  *       500:
  *         description: Server error
  */
-orderRoute.patch('/:id/status', async (req: Request, res: Response) => {
-  await updateOrderStatusController.handle(req, res);
+orderRoute.patch('/:id/status', async (req: Request, res: Response, next) => {
+  await updateOrderStatusController.handle(req, res, next);
 });
