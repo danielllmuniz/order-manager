@@ -13,7 +13,3 @@ orderRoute.get('/:id', async (req: Request, res: Response) => {
 orderRoute.patch('/:id/status', async (req: Request, res: Response) => {
   res.send('update status');
 });
-
-orderRoute.get('/', async (req: Request, res: Response) => {
-  res.send('list all orders');
-});
