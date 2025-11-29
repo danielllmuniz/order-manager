@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.gitignore
+README.md
+.env
+.env.example
+.eslintrc.json
+tsconfig.json
+jest.config.ts
+.DS_Store
+*.log
+npm-debug.log*
+.swc
