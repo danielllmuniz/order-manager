@@ -48,7 +48,7 @@ services:
     environment:
       NODE_ENV: dev
       DATABASE_TYPE: mongodb
-      MONGODB_URI: mongodb://admin:admin@mongodb:27017/order-service
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/order-service?authSource=admin
       RABBITMQ_URI: amqp://admin:admin@rabbitmq:5672
       PORT: 3000
     ports:

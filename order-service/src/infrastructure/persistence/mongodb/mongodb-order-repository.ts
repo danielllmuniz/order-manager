@@ -54,7 +54,6 @@ export class MongodbOrderRepository implements IOrderRepository {
 
       const order = OrderFactory.createWithStatus(id, doc.status);
 
-      // Update timestamps from database
       const reconstructed = Object.create(Object.getPrototypeOf(order));
       Object.assign(reconstructed, order);
       reconstructed['createdAt'] = doc.createdAt;
