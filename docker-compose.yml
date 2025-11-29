@@ -46,9 +46,9 @@ services:
     container_name: order-service
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: dev
       DATABASE_TYPE: mongodb
-      MONGODB_URI: mongodb://mongodb:27017/order-service
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/order-service
       RABBITMQ_URI: amqp://admin:admin@rabbitmq:5672
       PORT: 3000
     ports:

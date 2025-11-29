@@ -6,7 +6,6 @@ README.md
 .env
 .env.example
 .eslintrc.json
-tsconfig.json
 jest.config.ts
 .DS_Store
 *.log

@@ -2,11 +2,10 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  NODE_ENV: z.enum(['dev', 'staging', 'production']).default('dev'),
   PORT: z.coerce.number().default(3000),
-  MONGODB_URI: z.string().default('mongodb://admin:admin@localhost:27017/order-service-test?authSource=admin'),
-  RABBITMQ_URI: z.string().default('amqp://admin:admin@localhost:5672'),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  MONGODB_URI: z.string(),
+  RABBITMQ_URI: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);
